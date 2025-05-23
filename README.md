@@ -20,7 +20,7 @@ Projeto de sistema embarcado com ESP32 + sensor DHT22, que monitora temperatura 
 Ao conectar, o ESP32 fornece um IP local. Acesse esse IP no navegador para visualizar os dados atualizados.
 
 ## 📷 Imagem do Circuito / Arquitetura
-![Arquitetura](docs/arquitetura.png)
+![Image](https://github.com/user-attachments/assets/89dc45e3-1fe6-49c6-83e7-d2e13806ef8a)
 
 ## 📚 Referências
 - [ESP32 WiFi docs](https://docs.espressif.com/)
