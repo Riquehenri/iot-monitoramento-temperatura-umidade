@@ -6,7 +6,7 @@ Projeto de sistema embarcado com ESP32 + sensor DHT22, que monitora temperatura 
 - ESP32
 - Sensor DHT22
 - Arduino IDE
-- HTML/CSS (Web Server)
+- HTML/CSS (Servidor Web)
 - Biblioteca: `WiFi.h`, `WebServer.h`, `DHT.h`
 
 ## 🔌 Conexões do Hardware
