@@ -1,28 +1,30 @@
-# 🌡️ Monitoramento de Temperatura e Umidade com ESP32
+# 🌡️ ESP32 IoT Monitor - Temperatura e Umidade
 
-Projeto acadêmico para a disciplina de Performance de Sistemas Ciberfísicos.  
-Desenvolvimento de um sistema IoT utilizando ESP32 para monitorar remotamente dados de temperatura e umidade via rede Wi-Fi.
+Projeto de sistema embarcado com ESP32 + sensor DHT22, que monitora temperatura e umidade e exibe os dados em tempo real numa interface web via Wi-Fi.
 
----
+## 🔧 Tecnologias
+- ESP32
+- Sensor DHT22
+- Arduino IDE
+- HTML/CSS (Web Server)
+- Biblioteca: `WiFi.h`, `WebServer.h`, `DHT.h`
 
-## 🎯 Objetivo
+## 🔌 Conexões do Hardware
+| Componente | ESP32 |
+|------------|-------|
+| DHT22 VCC  | 3V3   |
+| DHT22 GND  | GND   |
+| DHT22 DATA | GPIO 26 |
 
-Criar um sistema ciberfísico que colete dados ambientais (temperatura e umidade) e disponibilize essas informações em tempo real através de uma interface web simples e acessível.
+## 🌐 Interface Web
+Ao conectar, o ESP32 fornece um IP local. Acesse esse IP no navegador para visualizar os dados atualizados.
 
----
+## 📷 Imagem do Circuito / Arquitetura
+![Arquitetura](docs/arquitetura.png)
 
-## ⚙️ Tecnologias Utilizadas
-
-- **Hardware**:
-  - ESP32 DevKit V1
-  - Sensor DHT22 (Temperatura e Umidade)
-- **Software**:
-  - Arduino IDE 
-  - MQTT (opcional)
-  - HTTP REST API (opcional)
-  - Banco de Dados Firebase (opcional)
-  - Wokwi (simulação)
-
----
+## 📚 Referências
+- [ESP32 WiFi docs](https://docs.espressif.com/)
+- [DHT22 datasheet](https://www.adafruit.com/product/385)
+- [Arduino WebServer Docs](https://www.arduino.cc/en/Reference/WebServer)
 
 
