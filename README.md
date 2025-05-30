@@ -33,7 +33,10 @@ Ao conectar o ESP32 ao Wi-Fi, ele exibe no monitor serial um IP local. Basta ace
 
 ## 🖼️ Diagrama / Arquitetura
 
-![Image](https://github.com/user-attachments/assets/89dc45e3-1fe6-49c6-83e7-d2e13806ef8a)
+<div style="display: flex; gap: 10px;">
+  <img src="https://github.com/user-attachments/assets/89dc45e3-1fe6-49c6-83e7-d2e13806ef8a" alt="Diagrama 1" width="48%" />
+  <img src="https://github.com/user-attachments/assets/73a3a912-4002-47c1-8b5a-966f0be9b836" alt="Diagrama 2" width="48%" />
+</div>
 
 ## 📚 Referências
 
