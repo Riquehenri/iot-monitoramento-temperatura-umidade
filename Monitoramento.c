@@ -2,38 +2,66 @@
 #include <WebServer.h>
 #include "DHT.h"
 
-// Configuração Wi-Fi
+// Wi-Fi 
 const char* ssid = "Felipe";
 const char* password = "12345678";
 
-// Configuração DHT22
+// DHT22
 #define DHTPIN 4
 #define DHTTYPE DHT22
 DHT dht(DHTPIN, DHTTYPE);
 
-// Histórico de dados (leituras a cada 10 segundos)
+// Histórico de dados (10 leituras a cada 10 segundos)
 const int maxLeituras = 10;
 float historicoTemperatura[maxLeituras];
 float historicoUmidade[maxLeituras];
+String timestamps[maxLeituras]; // Para armazenar timestamps
 int indiceLeitura = 0;
 int totalLeituras = 0;
 
-// Histórico de dados horários (leituras a cada hora)
-const int maxLeiturasHorarias = 10;
-float historicoTemperaturaHoraria[maxLeiturasHorarias];
-float historicoUmidadeHoraria[maxLeiturasHorarias];
-int indiceLeituraHoraria = 0;
-int totalLeiturasHorarias = 0;
-unsigned long ultimoTempoLeituraHoraria = 0;
-const unsigned long intervaloLeituraHoraria = 3600000; // 1 hora em milissegundos
+// Histórico de dados por hora (médias das últimas 10 horas)
+const int maxHoras = 10;
+float mediasTemperatura[maxHoras];
+float mediasUmidade[maxHoras];
+int indiceHora = 0;
+int totalHoras = 0;
+float somaTemperatura = 0;
+float somaUmidade = 0;
+int leiturasPorHora = 0;
+String horas[maxHoras];
 
 // Web server
 WebServer server(80);
 
-// Timer para leituras
+// Timer
 unsigned long ultimoTempoLeitura = 0;
 const unsigned long intervaloLeitura = 10000; // 10 segundos
+unsigned long ultimaHora = 0;
+const unsigned long intervaloHora = 3600000; // 1 hora
 
+// Simulação de data/hora (inicia em 11/06/2025 00:00:00)
+unsigned long startMillis = 0;
+
+// Função para gerar timestamp simulado
+String getTimestamp(unsigned long currentMillis) {
+  unsigned long seconds = (currentMillis - startMillis) / 1000;
+  int day = 11; // Fixo para 11/06/2025
+  int month = 6;
+  int year = 2025;
+  int hour = seconds / 3600;
+  int minute = (seconds % 3600) / 60;
+  int second = seconds % 60;
+
+  // Ajustar overflow do dia
+  day += hour / 24;
+  hour = hour % 24;
+
+  char buffer[20];
+  sprintf(buffer, "%02d/%02d/%04d %02d:%02d:%02d", day, month, year, hour, minute, second);
+  return String(buffer);
+}
+
+// Página principal
 void handleRoot() {
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
 
@@ -61,18 +89,18 @@ void handleRoot() {
         }
         h1 { font-size: 2em; }
         p { font-size: 1.3em; }
-        .chart-container {
-          display: flex;
-          justify-content: space-around;
-          flex-wrap: wrap;
-          margin: 20px 0;
-        }
-        .chart-wrapper {
-          margin: 10px;
+        .chart-container { margin: 20px; }
+        .log-container {
           background: rgba(255, 255, 255, 0.1);
-          padding: 15px;
-          border-radius: 8px;
+          border-radius: 10px;
+          padding: 20px;
+          max-width: 600px;
+          margin: 20px auto;
+          max-height: 200px;
+          overflow-y: auto;
+          text-align: left;
         }
+        .log-entry { font-size: 1.1em; margin: 5px 0; }
       </style>
     </head>
     <body>
@@ -82,133 +110,107 @@ void handleRoot() {
         <p id="umid">💧 Umidade Atual: <strong>--%</strong></p>
       </div>
 
-      <h2>📈 Histórico de Leituras (últimos 10 minutos)</h2>
-      <div class="chart-container">
-        <div class="chart-wrapper">
+      <h2>📈 Histórico de Leituras (Últimos 100 segundos)</h2>
+      <div style="display: flex; justify-content: space-around; flex-wrap: wrap;">
+        <div class="chart-container">
           <canvas id="lineChart" width="600" height="400"></canvas>
         </div>
-        <div class="chart-wrapper">
+        <div class="chart-container">
           <canvas id="barChart" width="400" height="400"></canvas>
         </div>
       </div>
 
-      <h2>⏳ Histórico Horário (últimas 10 horas)</h2>
+      <h2>📅 Histórico por Hora (Últimas 10 horas)</h2>
       <div class="chart-container">
-        <div class="chart-wrapper">
-          <canvas id="hourlyLineChart" width="600" height="400"></canvas>
-        </div>
+        <canvas id="hourlyChart" width="600" height="400"></canvas>
+      </div>
+
+      <h2>📜 Log de Leituras</h2>
+      <div class="log-container" id="log">
+        <p>Carregando log...</p>
       </div>
 
       <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
       <script>
-        let lineChart, barChart, hourlyLineChart;
+        let lineChart, barChart, hourlyChart;
 
         async function atualizarDados() {
-          try {
-            const resposta = await fetch("/dados");
-            const json = await resposta.json();
-            const temperaturas = json.temperaturas || [];
-            const umidades = json.umidades || [];
-            const temperaturasHorarias = json.temperaturasHorarias || [];
-            const umidadesHorarias = json.umidadesHorarias || [];
+          const resposta = await fetch("/dados");
+          const json = await resposta.json();
+          const temperaturas = json.temperaturas;
+          const umidades = json.umidades;
+          const mediasTempHoras = json.mediasTempHoras;
+          const mediasUmidHoras = json.mediasUmidHoras;
+          const labelsHoras = json.horas;
+          const timestamps = json.timestamps;
 
-            // Atualiza os valores atuais
-            document.getElementById("temp").innerHTML = "🌡️ Temperatura Atual: <strong>" + 
-              (temperaturas.length > 0 ? temperaturas[temperaturas.length - 1].toFixed(1) : "--") + "°C</strong>";
-            document.getElementById("umid").innerHTML = "💧 Umidade Atual: <strong>" + 
-              (umidades.length > 0 ? umidades[umidades.length - 1].toFixed(1) : "--") + "%</strong>";
+          document.getElementById("temp").innerHTML = "🌡️ Temperatura Atual: <strong>" + temperaturas[temperaturas.length - 1].toFixed(1) + "°C</strong>";
+          document.getElementById("umid").innerHTML = "💧 Umidade Atual: <strong>" + umidades[umidades.length - 1].toFixed(1) + "%</strong>";
 
-            // Cria labels para os gráficos de 10 minutos
-            const labelsMinutos = temperaturas.map((_, i) => (i * 10) + "s");
-
-            // Cria labels para o gráfico horário (formato HH:00)
-            const agora = new Date();
-            const labelsHorarios = [];
-            for (let i = 9; i >= 0; i--) {
-              let hora = new Date(agora.getTime() - i * 3600000);
-              labelsHorarios.push(hora.getHours().toString().padStart(2, '0') + ':00');
-            }
-
-            // Atualiza ou cria os gráficos
-            atualizarGraficoLinha(lineChart, "lineChart", labelsMinutos, 
-              temperaturas, umidades, "Temperatura (°C)", "blue", "Umidade (%)", "red");
-            
-            atualizarGraficoBarras(barChart, "barChart", temperaturas, umidades);
-            
-            atualizarGraficoLinha(hourlyLineChart, "hourlyLineChart", labelsHorarios, 
-              temperaturasHorarias, umidadesHorarias, "Temp. Horária (°C)", "green", "Umid. Horária (%)", "orange", 
-              "Histórico das Últimas 10 Horas");
-          } catch (error) {
-            console.error("Erro ao atualizar dados:", error);
+          // Atualizar log
+          const logDiv = document.getElementById("log");
+          logDiv.innerHTML = "";
+          for (let i = 0; i < timestamps.length; i++) {
+            const entry = document.createElement("p");
+            entry.className = "log-entry";
+            entry.innerHTML = `Dia ${timestamps[i]} Temperatura: ${temperaturas[i].toFixed(1)}°C Umidade: ${umidades[i].toFixed(1)}%`;
+            logDiv.appendChild(entry);
           }
-        }
 
-        function atualizarGraficoLinha(chart, canvasId, labels, data1, data2, label1, color1, label2, color2, title = "") {
-          if (chart) chart.destroy();
-          
-          chart = new Chart(document.getElementById(canvasId), {
+          const labels = temperaturas.map((_, i) => (i + 1).toString());
+
+          if (lineChart) lineChart.destroy();
+          if (barChart) barChart.destroy();
+          if (hourlyChart) hourlyChart.destroy();
+
+          lineChart = new Chart(document.getElementById("lineChart"), {
             type: "line",
             data: {
               labels: labels,
               datasets: [
                 {
-                  label: label1,
-                  data: data1,
+                  label: "Temperatura (°C)",
+                  data: temperaturas,
                   yAxisID: 'y1',
-                  borderColor: color1,
-                  backgroundColor: color1 + "20",
-                  borderWidth: 2,
-                  fill: true
+                  borderColor: "blue",
+                  fill: false
                 },
                 {
-                  label: label2,
-                  data: data2,
+                  label: "Umidade (%)",
+                  data: umidades,
                   yAxisID: 'y2',
-                  borderColor: color2,
-                  backgroundColor: color2 + "20",
-                  borderWidth: 2,
-                  fill: true
+                  borderColor: "red",
+                  fill: false
                 }
               ]
             },
             options: {
               responsive: false,
-              plugins: {
-                title: {
-                  display: !!title,
-                  text: title
-                }
-              },
               scales: {
                 y1: {
                   type: 'linear',
                   position: 'left',
-                  title: { display: true, text: label1 }
+                  title: { display: true, text: 'Temperatura (°C)' }
                 },
                 y2: {
                   type: 'linear',
                   position: 'right',
-                  title: { display: true, text: label2 },
+                  title: { display: true, text: 'Umidade (%)' },
                   grid: { drawOnChartArea: false }
                 }
               }
             }
           });
-          return chart;
-        }
 
-        function atualizarGraficoBarras(chart, canvasId, temperaturas, umidades) {
-          if (chart) chart.destroy();
-          
-          const mediaTemp = temperaturas.length > 0 ? temperaturas.reduce((a, b) => a + b) / temperaturas.length : 0;
-          const mediaUmid = umidades.length > 0 ? umidades.reduce((a, b) => a + b) / umidades.length : 0;
+          const mediaTemp = temperaturas.reduce((a, b) => a + b) / temperaturas.length;
+          const mediaUmid = umidades.reduce((a, b) => a + b) / umidades.length;
 
-          chart = new Chart(document.getElementById(canvasId), {
+          barChart = new Chart(document.getElementById("barChart"), {
             type: "bar",
             data: {
               labels: ["Temperatura Média", "Umidade Média"],
               datasets: [{
-                label: "Médias",
+                label: "Média",
                 data: [mediaTemp.toFixed(2), mediaUmid.toFixed(2)],
                 backgroundColor: ["blue", "red"]
               }]
@@ -222,10 +224,50 @@ void handleRoot() {
               }
             }
           });
-          return chart;
+
+          hourlyChart = new Chart(document.getElementById("hourlyChart"), {
+            type: "line",
+            data: {
+              labels: labelsHoras,
+              datasets: [
+                {
+                  label: "Temperatura Média (°C)",
+                  data: mediasTempHoras,
+                  yAxisID: 'y1',
+                  borderColor: "blue",
+                  fill: false
+                },
+                {
+                  label: "Umidade Média (%)",
+                  data: mediasUmidHoras,
+                  yAxisID: 'y2',
+                  borderColor: "red",
+                  fill: false
+                }
+              ]
+            },
+            options: {
+              responsive: false,
+              scales: {
+                x: {
+                  title: { display: true, text: 'Hora' }
+                },
+                y1: {
+                  type: 'linear',
+                  position: 'left',
+                  title: { display: true, text: 'Temperatura (°C)' }
+                },
+                y2: {
+                  type: 'linear',
+                  position: 'right',
+                  title: { display: true, text: 'Umidade (%)' },
+                  grid: { drawOnChartArea: false }
+                }
+              }
+            }
+          });
         }
 
-        // Atualiza os dados a cada 10 segundos
         setInterval(atualizarDados, 10000);
         window.onload = atualizarDados;
       </script>
@@ -236,6 +278,7 @@ void handleRoot() {
   server.send(200, "text/html", html);
 }
 
+// Endpoint para fornecer os dados em JSON
 void handleDados() {
   String json = "{ \"temperaturas\": [";
   for (int i = 0; i < totalLeituras; i++) {
@@ -249,19 +292,31 @@ void handleDados() {
     json += String(historicoUmidade[idx]);
     if (i < totalLeituras - 1) json += ",";
   }
-  json += "], \"temperaturasHorarias\": [";
-  for (int i = 0; i < totalLeiturasHorarias; i++) {
-    int idx = (indiceLeituraHoraria + i) % maxLeiturasHorarias;
-    json += String(historicoTemperaturaHoraria[idx]);
-    if (i < totalLeiturasHorarias - 1) json += ",";
+  json += "], \"mediasTempHoras\": [";
+  for (int i = 0; i < totalHoras; i++) {
+    int idx = (indiceHora + i) % maxHoras;
+    json += String(mediasTemperatura[idx]);
+    if (i < totalHoras - 1) json += ",";
   }
-  json += "], \"umidadesHorarias\": [";
-  for (int i = 0; i < totalLeiturasHorarias; i++) {
-    int idx = (indiceLeituraHoraria + i) % maxLeiturasHorarias;
-    json += String(historicoUmidadeHoraria[idx]);
-    if (i < totalLeiturasHorarias - 1) json += ",";
+  json += "], \"mediasUmidHoras\": [";
+  for (int i = 0; i < totalHoras; i++) {
+    int idx = (indiceHora + i) % maxHoras;
+    json += String(mediasUmidade[idx]);
+    if (i < totalHoras - 1) json += ",";
   }
-  json += "] }";
+  json += "], \"horas\": [";
+  for (int i = 0; i < totalHoras; i++) {
+    int idx = (indiceHora + i) % maxHoras;
+    json += "\"" + horas[idx] + "\"";
+    if (i < totalHoras - 1) json += ",";
+  }
+  json += "], \"timestamps\": [";
+  for (int i = 0; i < totalLeituras; i++) {
+    int idx = (indiceLeitura + i) % maxLeituras;
+    json += "\"" + timestamps[idx] + "\"";
+    if (i < totalLeituras - 1) json += ",";
+  }
+  json += "], \"maxLeituras\": " + String(maxLeituras) + ", \"indiceLeitura\": " + String(indiceLeitura) + " }";
 
   server.send(200, "application/json", json);
 }
@@ -269,8 +324,8 @@ void handleDados() {
 void setup() {
   Serial.begin(115200);
   dht.begin();
+  startMillis = millis(); // Inicializar tempo de início
 
-  // Conecta ao Wi-Fi
   WiFi.begin(ssid, password);
   Serial.print("Conectando ao Wi-Fi");
   while (WiFi.status() != WL_CONNECTED) {
@@ -282,19 +337,6 @@ void setup() {
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
 
-  // Inicializa arrays com valores padrão
-  for (int i = 0; i < maxLeituras; i++) {
-    historicoTemperatura[i] = 0;
-    historicoUmidade[i] = 0;
-  }
-  
-  for (int i = 0; i < maxLeiturasHorarias; i++) {
-    historicoTemperaturaHoraria[i] = 24.0 + (i * 0.1);
-    historicoUmidadeHoraria[i] = 50.0 + (i * 0.5);
-    totalLeiturasHorarias = maxLeiturasHorarias;
-  }
-
-  // Configura as rotas do servidor web
   server.on("/", handleRoot);
   server.on("/dados", handleDados);
   server.begin();
@@ -305,8 +347,6 @@ void loop() {
   server.handleClient();
 
   unsigned long agora = millis();
-  
-  // Leituras a cada 10 segundos
   if (agora - ultimoTempoLeitura >= intervaloLeitura) {
     ultimoTempoLeitura = agora;
 
@@ -314,37 +354,43 @@ void loop() {
     float t = dht.readTemperature();
 
     if (!isnan(h) && !isnan(t)) {
+      // Armazenar leitura de 10 segundos
       historicoTemperatura[indiceLeitura] = t;
       historicoUmidade[indiceLeitura] = h;
+      timestamps[indiceLeitura] = getTimestamp(agora);
       indiceLeitura = (indiceLeitura + 1) % maxLeituras;
       if (totalLeituras < maxLeituras) totalLeituras++;
-      
-      Serial.print("Temperatura: ");
-      Serial.print(t);
-      Serial.print("°C, Umidade: ");
-      Serial.print(h);
-      Serial.println("%");
+
+      // Acumular para média horária
+      somaTemperatura += t;
+      somaUmidade += h;
+      leiturasPorHora++;
     }
-  }
 
-  // Leituras horárias
-  if (agora - ultimoTempoLeituraHoraria >= intervaloLeituraHoraria) {
-    ultimoTempoLeituraHoraria = agora;
+    // Verificar se passou 1 hora
+    if (agora - ultimaHora >= intervaloHora) {
+      if (leiturasPorHora > 0) {
+        // Calcular médias horárias
+        mediasTemperatura[indiceHora] = somaTemperatura / leiturasPorHora;
+        mediasUmidade[indiceHora] = somaUmidade / leiturasPorHora;
 
-    float h = dht.readHumidity();
-    float t = dht.readTemperature();
+        // Obter hora atual para a label
+        unsigned long segundos = (agora - startMillis) / 1000;
+        int hora = (segundos / 3600) % 24;
+        int minuto = (segundos % 3600) / 60;
+        char horaStr[6];
+        sprintf(horaStr, "%02d:%02d", hora, minuto);
+        horas[indiceHora] = String(horaStr);
 
-    if (!isnan(h) && !isnan(t)) {
-      historicoTemperaturaHoraria[indiceLeituraHoraria] = t;
-      historicoUmidadeHoraria[indiceLeituraHoraria] = h;
-      indiceLeituraHoraria = (indiceLeituraHoraria + 1) % maxLeiturasHorarias;
-      if (totalLeiturasHorarias < maxLeiturasHorarias) totalLeiturasHorarias++;
-      
-      Serial.print("Leitura horária - Temperatura: ");
-      Serial.print(t);
-      Serial.print("°C, Umidade: ");
-      Serial.print(h);
-      Serial.println("%");
+        indiceHora = (indiceHora + 1) % maxHoras;
+        if (totalHoras < maxHoras) totalHoras++;
+
+        // Resetar acumuladores
+        somaTemperatura = 0;
+        somaUmidade = 0;
+        leiturasPorHora = 0;
+      }
+      ultimaHora = agora;
     }
   }
 }
