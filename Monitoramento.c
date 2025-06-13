@@ -3,8 +3,8 @@
 #include "DHT.h"
 
 // Wi-Fi 
-const char* ssid = "Felipe";
-const char* password = "12345678";
+const char* ssid = "SUA_REDE";
+const char* password = "SUA_SENHA";
 
 // DHT22
 #define DHTPIN 4
