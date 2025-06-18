@@ -16,8 +16,8 @@
  * Define as credenciais do Wi-Fi e as configurações do bot do Telegram, incluindo o token do bot
  * e o ID do grupo ou chat onde as mensagens serão enviadas.
  */
-const char* ssid = "troco senha por cerveja"; // Nome da rede Wi-Fi (SSID)
-const char* password = "casa2022";            // Senha da rede Wi-Fi
+const char* ssid = "SUA_REDE"; // Nome da rede Wi-Fi (SSID)
+const char* password = "SUA_SENHA";            // Senha da rede Wi-Fi
 #define BOT_TOKEN "8175208512:AAFm10c7iBvhh9zW71rKSeG_akf2BP6_pTA" // Token do bot do Telegram
 String chatIds[] = {"-4971691400"};           // Array com IDs de chats/grupos do Telegram
 WiFiClientSecure client;                      // Cliente seguro para comunicação HTTPS com o Telegram
