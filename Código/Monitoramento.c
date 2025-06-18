@@ -19,7 +19,7 @@
 const char* ssid = "SUA_REDE"; // Nome da rede Wi-Fi (SSID)
 const char* password = "SUA_SENHA";            // Senha da rede Wi-Fi
 #define BOT_TOKEN "8175208512:AAFm10c7iBvhh9zW71rKSeG_akf2BP6_pTA" // Token do bot do Telegram
-String chatIds[] = {"-4971691400"};           // Array com IDs de chats/grupos do Telegram
+String chatIds[] = {"SEU_BATE-PAPO"};           // Array com IDs de chats/grupos do Telegram
 WiFiClientSecure client;                      // Cliente seguro para comunicação HTTPS com o Telegram
 UniversalTelegramBot bot(BOT_TOKEN, client);   // Instância do bot do Telegram
 
