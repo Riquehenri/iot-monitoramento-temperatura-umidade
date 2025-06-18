@@ -1,21 +1,23 @@
 # 🌡️ ESP32 IoT Monitor - Temperatura e Umidade
 
-Projeto de sistema embarcado com *ESP32* e *sensor DHT22*, que realiza a leitura de temperatura e umidade, exibe os dados em tempo real em uma **interface web interativa** acessível via rede Wi-Fi, e envia alertas via Telegram quando a temperatura excede um limite configurado.
+Projeto de sistema embarcado com _ESP32_ e _sensor DHT22_, que realiza a leitura de temperatura e umidade, exibe os dados em tempo real em uma **interface web interativa** acessível via rede Wi-Fi, e envia alertas via Telegram quando a temperatura excede um limite configurado.
 
 ## 🔧 Tecnologias Utilizadas
 
 - **Hardware:**
-  - *ESP32* (microcontrolador com Wi-Fi e Bluetooth)
-  - *Sensor DHT22* (sensor digital de temperatura e umidade)
+
+  - _ESP32_ (microcontrolador com Wi-Fi e Bluetooth)
+  - _Sensor DHT22_ (sensor digital de temperatura e umidade)
   - Protoboard e jumpers
   - Fonte USB 5V (200-500 mA)
 
 - **Software e Ferramentas:**
-  - *Arduino IDE* (programação do ESP32)
-  - *Wokwi* (simulador online para validação de código)
-  - *HTML/CSS e JavaScript* (interface web com *Chart.js*)
-  - *NTPClient* (sincronização de tempo via NTP)
-  - *UniversalTelegramBot* (integração com Telegram)
+
+  - _Arduino IDE_ (programação do ESP32)
+  - _Wokwi_ (simulador online para validação de código)
+  - _HTML/CSS e JavaScript_ (interface web com _Chart.js_)
+  - _NTPClient_ (sincronização de tempo via NTP)
+  - _UniversalTelegramBot_ (integração com Telegram)
 
 - **Bibliotecas:**
   - `WiFi.h`: Gerencia conexões Wi-Fi
@@ -27,11 +29,11 @@ Projeto de sistema embarcado com *ESP32* e *sensor DHT22*, que realiza a leitura
 
 ## 🔌 Conexões do Hardware
 
-| Componente  | Pino ESP32 |
-|-------------|------------|
-| DHT22 VCC   | 3V3        |
-| DHT22 GND   | GND        |
-| DHT22 DATA  | GPIO 4     |
+| Componente | Pino ESP32 |
+| ---------- | ---------- |
+| DHT22 VCC  | 3V3        |
+| DHT22 GND  | GND        |
+| DHT22 DATA | GPIO 4     |
 
 ## 🌐 Interface Web
 
@@ -41,10 +43,9 @@ Ao conectar o ESP32 à rede Wi-Fi, ele exibe o endereço IP local no monitor ser
 
 - **Atualização Automática:** Dados atualizados a cada 10 segundos via requisições AJAX.
 - **Gráfico de Linha:** Exibe as últimas 10 leituras de temperatura e umidade (100 segundos).
-- **Gráfico de Barras:** Apresenta médias horárias de temperatura e umidade (últimas 10 horas).
 - **Indicadores Atuais:** Mostra os valores mais recentes de temperatura e umidade em destaque.
 - **Log de Leituras:** Exibe um histórico de até 10 leituras com timestamps, formatado em um contêiner com barra de rolagem.
-- **Renderização Gráfica:** Utiliza *Chart.js* (carregado via CDN) para gráficos interativos.
+- **Renderização Gráfica:** Utiliza _Chart.js_ (carregado via CDN) para gráficos interativos.
 
 ## 🔔 Alertas via Telegram
 
@@ -60,27 +61,33 @@ Ao conectar o ESP32 à rede Wi-Fi, ele exibe o endereço IP local no monitor ser
 
 ## 📊 Arquitetura do Sistema
 
-O sistema integra o sensor DHT22 ao ESP32, que lê os dados a cada 10 segundos e os disponibiliza via Wi-Fi em uma página HTML. Os dados são armazenados em buffers circulares para histórico (10 leituras) e médias horárias (10 horas). Alertas são enviados via Telegram em caso de temperatura alta. A interface web é gerada pelo ESP32, com gráficos renderizados por *Chart.js*.
+O sistema integra o sensor DHT22 ao ESP32, que lê os dados a cada 10 segundos e os disponibiliza via Wi-Fi em uma página HTML. Os dados são armazenados em buffers circulares para histórico (10 leituras) e médias horárias (10 horas). Alertas são enviados via Telegram em caso de temperatura alta. A interface web é gerada pelo ESP32, com gráficos renderizados por _Chart.js_.
 
-![Diagrama 1](https://github.com/user-attachments/assets/89dc45e3-1fe6-49c6-83e7-d2e13806ef8a)
-![Diagrama 2](https://github.com/user-attachments/assets/73a3a912-4002-47c1-8b5a-966f0be9b836)
+<div style="display: flex; gap: 10px;">
+  <img src="https://github.com/user-attachments/assets/89dc45e3-1fe6-49c6-83e7-d2e13806ef8a" alt="Diagrama 1" width="48%" />
+  <img src="https://github.com/user-attachments/assets/73a3a912-4002-47c1-8b5a-966f0be9b836" alt="Diagrama 2" width="48%" />
+</div>
 
 ## 🚀 Instruções de Uso
 
 1. **Configurar o Hardware:**
+
    - Conecte o sensor DHT22 ao ESP32 conforme a tabela de conexões.
    - Alimente o circuito via USB (5V).
 
 2. **Configurar o Software:**
-   - Instale as bibliotecas listadas no *Arduino IDE*.
+
+   - Instale as bibliotecas listadas no _Arduino IDE_.
    - Atualize as credenciais Wi-Fi (`ssid` e `password`) no código.
    - Configure o token do bot Telegram e o ID do chat/grupo.
 
 3. **Carregar o Código:**
-   - Use o *Arduino IDE* para carregar o código no ESP32.
+
+   - Use o _Arduino IDE_ para carregar o código no ESP32.
    - Abra o monitor serial (115200 baud) para verificar o IP atribuído.
 
 4. **Acessar a Interface:**
+
    - Conecte-se à mesma rede Wi-Fi do ESP32.
    - Acesse o IP exibido no monitor serial via navegador.
 
@@ -104,4 +111,4 @@ O sistema integra o sensor DHT22 ao ESP32, que lê os dados a cada 10 segundos e
 - [Chart.js Documentation](https://www.chartjs.org/)
 - [NTPClient Library](https://github.com/arduino-libraries/NTPClient)
 - [UniversalTelegramBot Library](https://github.com/witnessmenow/Universal-Arduino-Telegram-Bot)
-- Atzori, L.; Iera, A.; Morabito, G. *The Internet of Things: A survey*. Computer Networks, v. 54, n. 15, p. 2787-2805, 2010.
+- Atzori, L.; Iera, A.; Morabito, G. _The Internet of Things: A survey_. Computer Networks, v. 54, n. 15, p. 2787-2805, 2010.
